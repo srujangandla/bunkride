@@ -60,7 +60,7 @@ bunkride/
 ## ⚙️ Installation
 
 ### Clone Repo
-git clone https://github.com/YOUR_USERNAME/bunkride.git
+git clone https://github.com/srujangandla/bunkride.git
 cd bunkride
 
 ---
