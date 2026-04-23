@@ -93,7 +93,7 @@ Upload your APi
 
 ## 🚀 Deployment
 
-Will be done after Future Improvvements
+Will be done after Future Improvements
 
 ---
 
