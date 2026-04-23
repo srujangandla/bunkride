@@ -93,13 +93,7 @@ Upload your APi
 
 ## 🚀 Deployment
 
-### Backend (Render)
-- Add environment variables in dashboard
-- Start command: node server.js
-
-### Frontend (Vercel)
-- Add:
-REACT_APP_API_URL=https://your-backend-url.onrender.com
+Will be done after Future Improvvements
 
 ---
 
