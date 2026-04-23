@@ -199,6 +199,23 @@ app.post("/ride/cancel/:id", verifyToken, (req, res) => {
 
   res.json(ride);
 });
+app.post("/ride/complete/:id", verifyToken, (req, res) => {
+  const ride = rides.find(r => r.id == req.params.id);
+
+  if (!ride) {
+    return res.status(404).json({ msg: "Ride not found" });
+  }
+
+  if (ride.status !== "accepted") {
+    return res.status(400).json({ msg: "Ride not in progress" });
+  }
+
+  ride.status = "completed";
+
+  io.emit("rideUpdated", ride);
+
+  res.json(ride);
+});
 
 app.get("/rides", (req, res) => {
   res.json(rides);

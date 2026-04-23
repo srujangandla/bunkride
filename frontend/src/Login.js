@@ -55,6 +55,7 @@ function Login() {
       });
 
       localStorage.setItem("token", res.data.token);
+      localStorage.setItem("role", res.data.role);
 
       alert("Login Success");
       window.location.href = "/dashboard";

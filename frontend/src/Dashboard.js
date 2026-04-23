@@ -17,6 +17,7 @@ const defaultCenter = { lat: 17.385, lng: 78.4867 };
 
 export default function Dashboard() {
   const [rides, setRides] = useState([]);
+  const [role, setRole] = useState("");
   const [directions, setDirections] = useState(null);
   const [routeInfo, setRouteInfo] = useState(null);
   const [pickupCoords, setPickupCoords] = useState(null);
@@ -31,6 +32,18 @@ export default function Dashboard() {
 
   const pickupRef = useRef(null);
   const destinationRef = useRef(null);
+
+  const calculateFare = (distanceMeters) => {
+  const km = distanceMeters / 1000;
+
+  let fare = km * 16.5;
+
+  if (vehicleType === "car") {
+    fare *= 1.15;
+  }
+
+  return Math.max(Math.round(fare), 30);
+};
 
   const fetchRides = async () => {
     try {
@@ -54,6 +67,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchRides();
+    const r = localStorage.getItem("role");
+    setRole(r);
 
     socket.on("updateLocation", (d) => {
       setDriverLocation({ lat: d.lat, lng: d.lng });
@@ -115,7 +130,8 @@ export default function Dashboard() {
             setDestinationCoords(destCoords);
 
             setRouteInfo({
-              distance: leg.distance.text,
+              distanceText: leg.distance.text,
+              distanceValue: leg.distance.value, // meters (IMPORTANT)
               duration: leg.duration.text
             });
 
@@ -133,6 +149,25 @@ export default function Dashboard() {
       );
     });
   };
+
+  const completeRide = async (rideId) => {
+  try {
+    const token = localStorage.getItem("token");
+
+    await axios.post(
+      `${API_URL}/ride/complete/${rideId}`,
+      {},
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
+
+    fetchRides();
+    setRideLocked(false);
+  } catch {
+    alert("Complete failed");
+  }
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -179,6 +214,24 @@ export default function Dashboard() {
       alert("Cancel failed");
     }
   };
+
+  const acceptRide = async (rideId) => {
+  try {
+    const token = localStorage.getItem("token");
+
+    await axios.post(
+      `${API_URL}/ride/accept/${rideId}`,
+      {},
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
+
+    fetchRides();
+  } catch {
+    alert("Accept failed");
+  }
+};
 
   return (
     <LoadScript
@@ -233,10 +286,12 @@ export default function Dashboard() {
             </form>
 
             {routeInfo && (
-              <div className="mt-2 p-2 bg-dark rounded">
-                {routeInfo.distance} • {routeInfo.duration}
-              </div>
-            )}
+                <div className="mt-2 p-2 bg-dark rounded">
+                  {routeInfo.distanceText} • {routeInfo.duration}
+                  <br />
+                  Estimated Fare: ₹{calculateFare(routeInfo.distanceValue)}
+                </div>
+              )}
 
             <div style={{ marginTop: "10px" }}>
               {rides.map((r) => (
@@ -245,16 +300,52 @@ export default function Dashboard() {
                     ₹{r.fare}
                     <div style={{ fontSize: "12px" }}>{r.status}</div>
                   </div>
-
-                  {r.status !== "cancelled" && r.status !== "completed" && (
-                    <button onClick={() => cancelRide(r.id)} style={cancelBtn}>
-                      Cancel
-                    </button>
-                  )}
+              
+                  <div style={{ display: "flex", gap: "6px" }}>
+                  {role === "driver" && r.status === "requested" && (
+                      <button
+                        onClick={() => acceptRide(r.id)}
+                        style={{
+                          background: "blue",
+                          color: "white",
+                          border: "none",
+                          padding: "5px 8px",
+                          borderRadius: "5px"
+                        }}
+                      >
+                        Accept
+                      </button>
+                    )}
+                    
+                    {/* Cancel Button */}
+                    {role === "rider" && r.status !== "cancelled" && r.status !== "completed" && (
+                      <button onClick={() => cancelRide(r.id)} style={cancelBtn}>
+                        Cancel
+                      </button>
+                    )}
+            
+                    {/* ✅ Complete Button */}
+                    {r.status === "accepted" && (
+                      <button
+                        onClick={() => completeRide(r.id)}
+                        style={{
+                          background: "green",
+                          color: "white",
+                          border: "none",
+                          padding: "5px 8px",
+                          borderRadius: "5px",
+                          cursor: "pointer"
+                        }}
+                      >
+                        Complete
+                      </button>
+                    )}
+            
+                  </div>
                 </div>
               ))}
             </div>
-          </div>
+            </div>
 
           <div style={{ width: "75%" }}>
             <GoogleMap
